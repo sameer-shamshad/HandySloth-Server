@@ -116,9 +116,10 @@ export const getTrendingTools = async (req, res) => {
       {
         $project: {
           __v: 0,
-          'author.password': 0,
-          'author.refreshToken': 0,
-          'author.__v': 0
+          // 'author.password': 0,
+          // 'author.refreshToken': 0,
+          // 'author.__v': 0
+          'author.username': 1,
         }
       }
     ]);
@@ -220,6 +221,105 @@ export const removeBookmark = async (req, res) => {
     });
   } catch (error) {
     console.error('Remove bookmark error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const getToolById = async (req, res) => {
+  try {
+    const { toolId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(toolId)) {
+      return res.status(400).json({ message: 'The tool id is invalid.' });
+    }
+
+    const tool = await Tool.findById(toolId)
+      .populate('author', 'username')
+      .select('-__v');
+
+    if (!tool) {
+      return res.status(404).json({ message: 'Tool not found.' });
+    }
+
+    return res.status(200).json({ tool });
+  } catch (error) {
+    console.error('Get tool by ID error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const getToolsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID format.' });
+    }
+
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
+    const tools = await Tool.find({ author: userId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .populate('author', 'username email')
+      .select('-__v');
+
+    const total = await Tool.countDocuments({ author: userId });
+
+    return res.status(200).json({
+      tools,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get tools by user ID error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const getUserTools = async (req, res) => {
+  try {
+    const { userId } = req;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'The user id is invalid.' });
+    }
+
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
+    const tools = await Tool.find({ author: userId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .populate('author', 'username')
+      .select('-__v');
+
+    const total = await Tool.countDocuments({ author: userId });
+
+    return res.status(200).json({
+      tools,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get user tools error:', error);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 };

@@ -5,7 +5,8 @@ import cors from 'cors';
 
 import { connectMongoDB } from './config/mongo.config.js';
 import toolRoutes from './routes/tool.route.js';
-import authenticationRoutes from './routes/authentication.route.js';
+import authenticationRoutes from './routes/auth.route.js';
+import userRoutes from './routes/user.route.js';
 import { verifyToken } from './middlewares/verifyToken.js';
 
 const app = express();
@@ -19,5 +20,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authenticationRoutes);
 app.use('/api/tool', verifyToken, toolRoutes);
+app.use('/api/user', verifyToken, userRoutes);
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

@@ -5,7 +5,7 @@ import {
   register, 
   checkSession,
   refreshAccessToken,
-} from '../controllers/authentication.controller.js';
+} from '../controllers/auth.controller.js';
 
 const router = express.Router();
 
