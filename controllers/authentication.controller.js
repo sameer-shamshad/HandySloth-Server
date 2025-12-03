@@ -2,10 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/user.model.js';
 import { JWT_REFRESH_SECRET } from '../config/env.config.js';
-import { 
-  generateAccessToken,
-  generateAccessAndRefreshToken, 
-} from '../services/token.service.js';
+import { generateAccessToken, generateAccessAndRefreshToken } from '../services/token.service.js';
 
 export const register = async (req, res) => {
   try {

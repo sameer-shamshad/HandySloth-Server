@@ -69,7 +69,7 @@ const toolSchema = new Schema({
     type: String,
     maxlength: [5000, 'The full detail cannot exceed 5000 characters.']
   },
-  toolImages: [{ type: String, trim: true }],
+  toolImages: [{ type: String, trim: true, default: [] }],
   category: [{
     type: String,
     required: [true, 'The category is required.'],
@@ -96,7 +96,6 @@ const toolSchema = new Schema({
   },
   views: [{ type: ObjectId, ref: 'User', default: [] }],
   bookmarks: [{ type: ObjectId, ref: 'User', default: [] }],
-  
 }, {
   timestamps: true,
 });

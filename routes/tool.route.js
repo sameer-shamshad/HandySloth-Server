@@ -1,5 +1,4 @@
 import express from 'express';
-import { verifyToken } from '../middlewares/verifyToken.js';
 import { 
   createTool,
 } from '../controllers/tool.controller.js';
@@ -7,3 +6,5 @@ import {
 const router = express.Router();
 
 router.post('/', createTool);
+
+export default router;
