@@ -38,7 +38,6 @@ const objectIdSchema = z.string().refine(
   { message: 'Invalid ObjectId format.' }
 );
 
-// Links schema
 const linksSchema = z.object({
   telegram: z.string().trim().default('').optional(),
   x: z.string().trim().default('').optional(),
@@ -52,7 +51,7 @@ const linksSchema = z.object({
 // Create tool schema
 export const createToolSchema = z.object({
   name: z.string().trim().min(1, 'Tool name is required and must be a non-empty string.'),
-  logo: z.string().trim().min(1, 'Tool logo is required and must be a non-empty string.'),
+  logo: z.string().trim().default('').optional(),
   category: z.array(z.enum(TOOL_CATEGORIES, { errorMap: () => ({ message: 'The category is invalid.' }) })).min(1, 'At least one category is required.'),
   shortDescription: z.string().trim().max(500, 'The short description cannot exceed 500 characters.').optional().default(''),
   fullDetail: z.string().trim().max(5000, 'The full detail cannot exceed 5000 characters.').optional().default(''),

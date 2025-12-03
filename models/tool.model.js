@@ -58,7 +58,7 @@ const toolSchema = new Schema({
     type: String,
     required: [true, 'The tool name is required.'],
   },
-  logo: { type: String, trim: true },
+  logo: { type: String, trim: true, default: '' },
   shortDescription: {
     trim: true,
     type: String,

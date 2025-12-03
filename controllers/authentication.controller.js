@@ -11,7 +11,7 @@ export const register = async (req, res) => {
     // Validate input
     if (!username || !email || !password) {
       return res.status(400).json({ 
-        error: 'Username, email, and password are required.',
+        message: 'Username, email, and password are required.',
       });
     }
 
@@ -20,7 +20,7 @@ export const register = async (req, res) => {
 
     if (existingUser) {
       return res.status(409).json({ 
-        error: 'User with this email already exists.' 
+        message: 'User with this email already exists.' 
       });
     }
 
@@ -40,7 +40,7 @@ export const register = async (req, res) => {
     return res.status(201).json({ message: 'User registered successfully.' });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
 
@@ -51,7 +51,7 @@ export const login = async (req, res) => {
     // Validate input
     if (!email || !password) {
       return res.status(400).json({ 
-        error: 'Email and password are required.' 
+        message: 'Email and password are required.' 
       });
     }
 
@@ -60,7 +60,7 @@ export const login = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ 
-        error: 'The email or password is incorrect.' 
+        message: 'The email or password is incorrect.' 
       });
     }
 
@@ -69,7 +69,7 @@ export const login = async (req, res) => {
 
     if (!isPasswordValid) {
       return res.status(401).json({ 
-        error: 'The email or password is incorrect.' 
+        message: 'The email or password is incorrect.' 
       });
     }
 
@@ -92,7 +92,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
 
@@ -103,13 +103,13 @@ export const checkSession = async (req, res) => {
     const user = await User.findById(userId).select('-password -__v');
 
     if (!user) {
-      return res.status(404).json({  error: 'User not found.' });
+      return res.status(404).json({  message: 'User not found.' });
     }
 
     return res.status(200).json({ user });
   } catch (error) {
     console.error('Check session error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
 
@@ -119,26 +119,26 @@ export const refreshAccessToken = async (req, res) => {
 
     // Validate input
     if (!token)
-      return res.status(400).json({ error: 'The refresh token is required.' });
+      return res.status(400).json({ message: 'The refresh token is required.' });
 
     // Verify refresh token
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_REFRESH_SECRET);
     } catch (error) {
-      return res.status(401).json({ error: 'The refresh token is invalid or expired.' });
+      return res.status(401).json({ message: 'The refresh token is invalid or expired.' });
     }
 
     // Find user by ID
     const user = await User.findById(decoded.userId, '-password -__v');
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
+      return res.status(404).json({ message: 'User not found.' });
     }
 
     // Check if the refresh token matches the one stored in database
     if (user.refreshToken !== token)
-      return res.status(401).json({ error: 'The refresh token is invalid.' });
+      return res.status(401).json({ message: 'The refresh token is invalid.' });
 
     // Generate new access token
     const accessToken = await generateAccessToken(user);
@@ -146,6 +146,6 @@ export const refreshAccessToken = async (req, res) => {
     return res.status(200).json({ accessToken });
   } catch (error) {
     console.error('Refresh token error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
