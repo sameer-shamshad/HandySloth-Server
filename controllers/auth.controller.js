@@ -165,3 +165,43 @@ export const refreshAccessToken = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 }
+
+export const logout = async (req, res) => {
+  try {
+    const { refreshToken: token } = req.body;
+
+    // Validate input
+    if (!token) {
+      return res.status(400).json({ message: 'Refresh token is required.' });
+    }
+
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_REFRESH_SECRET);
+    } catch (error) {
+      return res.status(401).json({ message: 'The refresh token is invalid or expired.' });
+    }
+
+    // Find user by ID
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Check if the refresh token matches the one stored in database
+    if (user.refreshToken !== token) {
+      return res.status(401).json({ message: 'The refresh token is invalid.' });
+    }
+
+    // Clear refresh token from database
+    user.refreshToken = null;
+    await user.save();
+
+    return res.status(200).json({ message: 'Logged out successfully.' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}

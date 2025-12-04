@@ -326,6 +326,7 @@ export const getUserTools = async (req, res) => {
 export const getBookmarkedTools = async (req, res) => {
   try {
     const { userId } = req;
+    console.log('getBookmarkedTools');
     const limit = parseInt(req.query.limit) || 10;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
