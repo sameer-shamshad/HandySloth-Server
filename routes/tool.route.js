@@ -13,7 +13,10 @@ import {
 const router = express.Router();
 
 router.post('/', verifyToken, createTool);
-router.get('/recent', getRecentTools);
+router.get('/recent', (req, res, next) => {
+  console.log('getRecentTools');
+  next();
+}, getRecentTools);
 router.get('/trending', getTrendingTools);
 router.get('/user/:userId', getToolsByUserId);
 router.get('/:toolId', getToolById);

@@ -13,13 +13,19 @@ const app = express();
 
 connectMongoDB(); // Connect to MongoDB
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+}));
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authenticationRoutes);
-app.use('/api/tool', verifyToken, toolRoutes);
+app.use('/api/tool', toolRoutes);
 app.use('/api/user', verifyToken, userRoutes);
+
+app.get('/', (req, res) => {
+  res.send('Hello World');
+});
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

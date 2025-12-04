@@ -55,6 +55,7 @@ export const createTool = async (req, res) => {
 
 export const getRecentTools = async (req, res) => {
   try {
+    console.log('getRecentTools');
     const limit = parseInt(req.query.limit) || 10;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
@@ -73,7 +74,7 @@ export const getRecentTools = async (req, res) => {
       pagination: {
         page,
         limit,
-        total,
+        totalTools:total,
         totalPages: Math.ceil(total / limit)
       }
     });
@@ -207,9 +208,7 @@ export const removeBookmark = async (req, res) => {
     }
 
     // Remove bookmark
-    tool.bookmarks = tool.bookmarks.filter(
-      bookmarkId => bookmarkId.toString() !== userId.toString()
-    );
+    tool.bookmarks = tool.bookmarks.filter(bookmarkId => bookmarkId.toString() !== userId.toString());
     await tool.save();
 
     return res.status(200).json({ 
@@ -320,6 +319,46 @@ export const getUserTools = async (req, res) => {
     });
   } catch (error) {
     console.error('Get user tools error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const getBookmarkedTools = async (req, res) => {
+  try {
+    const { userId } = req;
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'The user id is invalid.' });
+    }
+
+    const tools = await Tool.find({ bookmarks: userId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .populate('author', 'username')
+      .select('-__v');
+
+    const total = await Tool.countDocuments({ bookmarks: userId });
+
+    return res.status(200).json({
+      tools,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      },
+      message: 'Bookmarked tools fetched successfully.'
+    });
+  } catch (error) {
+    console.error('Get bookmarked tools error:', error);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 };
