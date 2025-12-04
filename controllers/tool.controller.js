@@ -55,7 +55,6 @@ export const createTool = async (req, res) => {
 
 export const getRecentTools = async (req, res) => {
   try {
-    console.log('getRecentTools');
     const limit = parseInt(req.query.limit) || 10;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
@@ -117,10 +116,12 @@ export const getTrendingTools = async (req, res) => {
       {
         $project: {
           __v: 0,
-          // 'author.password': 0,
-          // 'author.refreshToken': 0,
-          // 'author.__v': 0
-          'author.username': 1,
+          'author.password': 0,
+          'author.refreshToken': 0,
+          'author.__v': 0,
+          'author.email': 0,
+          'author.createdAt': 0,
+          'author.updatedAt': 0
         }
       }
     ]);
@@ -263,13 +264,14 @@ export const getToolsByUserId = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
-      .populate('author', 'username email')
-      .select('-__v');
+      .select('_id');
 
     const total = await Tool.countDocuments({ author: userId });
 
+    const toolIds = tools.map(tool => tool._id);
+
     return res.status(200).json({
-      tools,
+      toolIds,
       pagination: {
         page,
         limit,
@@ -326,7 +328,6 @@ export const getUserTools = async (req, res) => {
 export const getBookmarkedTools = async (req, res) => {
   try {
     const { userId } = req;
-    console.log('getBookmarkedTools');
     const limit = parseInt(req.query.limit) || 10;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
@@ -343,13 +344,14 @@ export const getBookmarkedTools = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
-      .populate('author', 'username')
-      .select('-__v');
+      .select('_id');
 
     const total = await Tool.countDocuments({ bookmarks: userId });
 
+    const toolIds = tools.map(tool => tool._id);
+
     return res.status(200).json({
-      tools,
+      toolIds,
       pagination: {
         page,
         limit,
