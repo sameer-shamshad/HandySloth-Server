@@ -1,7 +1,7 @@
 import { Schema, model, ObjectId } from 'mongoose';
 
 // Tool Category Enum
-const TOOL_CATEGORIES = [
+export const TOOL_CATEGORIES = [
   '',
   'Data Analytics',
   'AI Tools',
@@ -15,8 +15,7 @@ const TOOL_CATEGORIES = [
   'Other'
 ];
 
-// Tool Tag Enum
-const TOOL_TAGS = [
+export const TOOL_TAGS = [
   'Free',
   'Paid',
   'Open Source',
@@ -31,7 +30,6 @@ const TOOL_TAGS = [
   'AI Powered'
 ];
 
-// Social Links Schema
 const socialLinksSchema = new Schema({
   telegram: {
     type: String,
@@ -50,7 +48,6 @@ const socialLinksSchema = new Schema({
   }
 }, { _id: false });
 
-// Tool Schema
 const toolSchema = new Schema({
   author: { type: ObjectId, ref: 'User', required: true },
   name: {
@@ -109,12 +106,11 @@ const toolSchema = new Schema({
   timestamps: true,
 });
 
-// Indexes for better query performance
 toolSchema.index({ category: 1 });
 toolSchema.index({ tags: 1 });
-toolSchema.index({ views: -1 }); // For trending tools
-toolSchema.index({ createdAt: -1 }); // For recent tools 
-toolSchema.index({ bookmarks: -1 }); // For most bookmarked
-toolSchema.index({ name: 'text' }); // Text search
+toolSchema.index({ views: -1 });
+toolSchema.index({ createdAt: -1 });
+toolSchema.index({ bookmarks: -1 });
+toolSchema.index({ name: 'text' });
 
 export const Tool = model('Tool', toolSchema);

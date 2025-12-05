@@ -12,6 +12,8 @@ import {
   getCategoryStats,
   upvoteTool,
   downvoteTool,
+  getToolsByPrimaryCategory,
+  getMostPopularAlternative,
 } from '../controllers/tool.controller.js';
 
 const router = express.Router();
@@ -19,6 +21,8 @@ const router = express.Router();
 router.post('/', verifyToken, createTool);
 router.get('/recent', getRecentTools);
 router.get('/trending', getTrendingTools);
+router.get('/category/:primaryCategory', getToolsByPrimaryCategory);
+router.get('/popular-alternative/:primaryCategory', getMostPopularAlternative);
 router.get('/stats/categories', getCategoryStats);
 router.get('/user/:userId', getToolsByUserId);
 router.post('/:toolId/view', incrementView);

@@ -1,36 +1,8 @@
 import { z } from 'zod';
 import mongoose from 'mongoose';
+import { TOOL_CATEGORIES, TOOL_TAGS } from '../models/tool.model.js';
 
-// Tool Category Enum
-const TOOL_CATEGORIES = [
-  '',
-  'Data Analytics',
-  'AI Tools',
-  'Development',
-  'Design',
-  'Marketing',
-  'Productivity',
-  'Social Media',
-  'Content Creation',
-  'E-commerce',
-  'Other'
-];
-
-// Tool Tag Enum
-const TOOL_TAGS = [
-  'Free',
-  'Paid',
-  'Open Source',
-  'Web-based',
-  'Desktop',
-  'Mobile',
-  'API',
-  'Plugin',
-  'No Signup',
-  'Cloud',
-  'Self-hosted',
-  'AI Powered'
-];
+const VALID_PRIMARY_CATEGORIES = TOOL_CATEGORIES.filter(cat => cat !== '');
 
 // Custom ObjectId validation
 const objectIdSchema = z.string().refine(
@@ -52,7 +24,10 @@ const linksSchema = z.object({
 export const createToolSchema = z.object({
   name: z.string().trim().min(1, 'Tool name is required and must be a non-empty string.'),
   logo: z.string().trim().default('').optional(),
-  primaryCategory: z.enum(TOOL_CATEGORIES, { errorMap: () => ({ message: 'The primary category is invalid.' }) }),
+  primaryCategory: z.enum(
+    VALID_PRIMARY_CATEGORIES,
+    { errorMap: () => ({ message: 'The primary category is required and cannot be empty.' }) }
+  ),
   category: z.array(z.enum(TOOL_CATEGORIES, { errorMap: () => ({ message: 'The category is invalid.' }) })).min(1, 'At least one category is required.'),
   shortDescription: z.string().trim().max(500, 'The short description cannot exceed 500 characters.').optional().default(''),
   fullDetail: z.string().trim().max(5000, 'The full detail cannot exceed 5000 characters.').optional().default(''),
