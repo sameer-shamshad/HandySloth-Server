@@ -70,6 +70,14 @@ const toolSchema = new Schema({
     maxlength: [5000, 'The full detail cannot exceed 5000 characters.']
   },
   toolImages: [{ type: String, trim: true, default: [] }],
+  primaryCategory: {
+    type: String,
+    required: [true, 'The primary category is required.'],
+    enum: {
+      values: TOOL_CATEGORIES,
+      message: 'The primary category is invalid.'
+    },
+  },
   category: [{
     type: String,
     required: [true, 'The category is required.'],
@@ -95,6 +103,7 @@ const toolSchema = new Schema({
     })
   },
   views: [{ type: ObjectId, ref: 'User', default: [] }],
+  votes: [{ type: ObjectId, ref: 'User', default: [] }],
   bookmarks: [{ type: ObjectId, ref: 'User', default: [] }],
 }, {
   timestamps: true,

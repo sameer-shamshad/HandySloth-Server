@@ -32,6 +32,7 @@ export const createTool = async (req, res) => {
       author: userId,
       name: validatedData.name,
       logo: validatedData.logo,
+      primaryCategory: validatedData.primaryCategory,
       shortDescription: validatedData.shortDescription,
       fullDetail: validatedData.fullDetail,
       category: validatedData.category,
@@ -63,7 +64,7 @@ export const getRecentTools = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
-      .select('-__v -author -fullDetail -toolImages -tags -createdAt -updatedAt -bookmarks -views');
+      .select('_id logo name primaryCategory shortDescription links bookmarks');
 
     const total = await Tool.countDocuments();
 
@@ -103,12 +104,15 @@ export const getTrendingTools = async (req, res) => {
           __v: 0,
           tags: 0,
           views: 0,
+          votes: 0,
           author: 0,
           createdAt: 0,
           updatedAt: 0,
           bookmarks: 0,
+          category: 0,
           fullDetail: 0,
           toolImages: 0,
+          
         }
       }
     ]);
@@ -206,6 +210,82 @@ export const removeBookmark = async (req, res) => {
   }
 };
 
+export const upvoteTool = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { toolId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(toolId)) {
+      return res.status(400).json({ message: 'The user id or tool id is invalid.' });
+    }
+
+    const tool = await Tool.findById(toolId);
+
+    if (!tool) {
+      return res.status(404).json({ message: 'Tool not found.' });
+    }
+
+    // Check if already voted
+    if (tool.votes.includes(userId)) {
+      return res.status(400).json({ message: 'Tool is already upvoted.' });
+    }
+
+    // Add vote
+    tool.votes.push(userId);
+    await tool.save();
+
+    return res.status(200).json({ 
+      message: 'Tool upvoted successfully.',
+      tool: { _id: tool._id, votes: tool.votes }
+    });
+  } catch (error) {
+    console.error('Upvote tool error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const downvoteTool = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { toolId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(toolId)) {
+      return res.status(400).json({ message: 'The user id or tool id is invalid.' });
+    }
+
+    const tool = await Tool.findById(toolId);
+
+    if (!tool) {
+      return res.status(404).json({ message: 'Tool not found.' });
+    }
+
+    // Check if voted
+    if (!tool.votes.includes(userId)) {
+      return res.status(400).json({ message: 'Tool is not upvoted.' });
+    }
+
+    // Remove vote
+    tool.votes = tool.votes.filter(voteId => voteId.toString() !== userId.toString());
+    await tool.save();
+
+    return res.status(200).json({ 
+      message: 'Vote removed successfully.',
+      tool: { _id: tool._id, votes: tool.votes }
+    });
+  } catch (error) {
+    console.error('Downvote tool error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
 export const getToolById = async (req, res) => {
   try {
     const { toolId } = req.params;
@@ -269,40 +349,22 @@ export const getToolsByUserId = async (req, res) => {
 export const getUserToolIds = async (req, res) => {
   try {
     const { userId } = req;
-    console.log('userId', userId);
     
     if (!userId) {
       return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
     }
 
-    const userIdString = String(userId).trim();
-    
-    if (!mongoose.Types.ObjectId.isValid(userIdString)) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: 'The user id is invalid.' });
     }
 
-    const limit = parseInt(req.query.limit) || 12;
-    const page = parseInt(req.query.page) || 1;
-    const skip = (page - 1) * limit;
+    const tools = await Tool.find({ author: userId }).select('_id').lean();
 
-    const tools = await Tool.find({ author: userIdString })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(skip)
-      .select('_id');
-
-    const total = await Tool.countDocuments({ author: userIdString });
-
-    const toolIds = tools.map(tool => tool._id);
+    const toolIds = tools.map(tool => tool._id.toString());
 
     return res.status(200).json({
       toolIds,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      message: 'User tool IDs fetched successfully.'
     });
   } catch (error) {
     console.error('Get user tools error:', error);
@@ -310,11 +372,37 @@ export const getUserToolIds = async (req, res) => {
   }
 };
 
+export const getBookmarkedToolIds = async (req, res) => {
+  try {
+    const { userId } = req;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
+    }
+
+    
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'The user id is invalid.' });
+    }
+
+    const tools = await Tool.find({ bookmarks: userId }).select('_id').lean();
+
+    const toolIds = tools.map(tool => tool._id.toString());
+
+    return res.status(200).json({
+      bookmarkedToolIds: toolIds,
+      message: 'Bookmarked tool IDs fetched successfully.'
+    });
+  } catch (error) {
+    console.error('Get bookmarked tool IDs error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
 export const getBookmarkedTools = async (req, res) => {
   try {
     const { userId } = req;
-    console.log('userId', userId);
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 5;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
@@ -332,14 +420,12 @@ export const getBookmarkedTools = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
-      .select('_id');
+      .select('_id logo name');
 
     const total = await Tool.countDocuments({ bookmarks: userIdString });
 
-    const toolIds = tools.map(tool => tool._id);
-
     return res.status(200).json({
-      toolIds,
+      bookmarkedTools: tools,
       pagination: {
         page,
         limit,
@@ -350,6 +436,32 @@ export const getBookmarkedTools = async (req, res) => {
     });
   } catch (error) {
     console.error('Get bookmarked tools error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const getVotedToolIds = async (req, res) => {
+  try {
+    const { userId } = req;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
+    }
+    
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'The user id is invalid.' });
+    }
+
+    const tools = await Tool.find({ votes: userId }).select('_id').lean();
+    
+    const toolIds = tools.map(tool => tool._id.toString());
+    
+    return res.status(200).json({ 
+      votedToolIds: toolIds, 
+      message: 'Voted tool IDs fetched successfully.' 
+    });
+  } catch (error) {
+    console.error('Get voted tool IDs error:', error);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 };
@@ -389,6 +501,38 @@ export const incrementView = async (req, res) => {
     });
   } catch (error) {
     console.error('Increment view error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const getCategoryStats = async (req, res) => {
+  try {
+    const stats = await Tool.aggregate([
+      // Unwind the category array to get one document per category
+      { $unwind: '$category' },
+      // Group by category and calculate stats
+      {
+        $group: {
+          _id: '$category',
+          totalTools: { $sum: 1 },
+          totalVotes: { $sum: { $size: { $ifNull: ['$votes', []] } } },
+          totalBookmarks: { $sum: { $size: { $ifNull: ['$bookmarks', []] } } }
+        }
+      },
+      { // Project to rename _id to category
+        $project: {
+          _id: 0,
+          name: '$_id',
+          totalTools: 1,
+          totalVotes: 1,
+          totalBookmarks: 1
+        }
+      },
+      { $sort: { category: 1 } }
+    ]);
+
+    return res.status(200).json({ stats, message: 'Category stats fetched successfully.' });
+  } catch (error) {
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 };
