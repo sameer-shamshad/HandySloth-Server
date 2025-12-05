@@ -55,7 +55,7 @@ export const createTool = async (req, res) => {
 
 export const getRecentTools = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 5;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
@@ -63,8 +63,7 @@ export const getRecentTools = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
-      .populate('author', 'username')
-      .select('-__v');
+      .select('-__v -author -fullDetail -toolImages -tags -createdAt -updatedAt -bookmarks -views');
 
     const total = await Tool.countDocuments();
 
@@ -85,7 +84,7 @@ export const getRecentTools = async (req, res) => {
 
 export const getTrendingTools = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 5;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
@@ -100,28 +99,16 @@ export const getTrendingTools = async (req, res) => {
       { $skip: skip },
       { $limit: limit },
       {
-        $lookup: {
-          from: 'users',
-          localField: 'author',
-          foreignField: '_id',
-          as: 'author'
-        }
-      },
-      {
-        $unwind: {
-          path: '$author',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
         $project: {
           __v: 0,
-          'author.password': 0,
-          'author.refreshToken': 0,
-          'author.__v': 0,
-          'author.email': 0,
-          'author.createdAt': 0,
-          'author.updatedAt': 0
+          tags: 0,
+          views: 0,
+          author: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          bookmarks: 0,
+          fullDetail: 0,
+          toolImages: 0,
         }
       }
     ]);
@@ -173,10 +160,7 @@ export const bookmarkTool = async (req, res) => {
 
     return res.status(200).json({ 
       message: 'Tool bookmarked successfully.',
-      tool: {
-        id: tool._id,
-        bookmarks: tool.bookmarks
-      }
+      tool: { _id: tool._id }
     });
   } catch (error) {
     console.error('Bookmark tool error:', error);
@@ -214,10 +198,7 @@ export const removeBookmark = async (req, res) => {
 
     return res.status(200).json({ 
       message: 'Bookmark removed successfully.',
-      tool: {
-        id: tool._id,
-        bookmarks: tool.bookmarks
-      }
+      tool: { _id: tool._id }
     });
   } catch (error) {
     console.error('Remove bookmark error:', error);
@@ -285,7 +266,7 @@ export const getToolsByUserId = async (req, res) => {
   }
 };
 
-export const getUserTools = async (req, res) => {
+export const getUserToolIds = async (req, res) => {
   try {
     const { userId } = req;
 
@@ -297,7 +278,7 @@ export const getUserTools = async (req, res) => {
       return res.status(400).json({ message: 'The user id is invalid.' });
     }
 
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 12;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
@@ -306,7 +287,7 @@ export const getUserTools = async (req, res) => {
       .limit(limit)
       .skip(skip)
       .populate('author', 'username')
-      .select('-__v');
+      .select('-__v -author -fullDetail -toolImages -tags -createdAt -updatedAt -bookmarks -views');
 
     const total = await Tool.countDocuments({ author: userId });
 
@@ -362,6 +343,45 @@ export const getBookmarkedTools = async (req, res) => {
     });
   } catch (error) {
     console.error('Get bookmarked tools error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const incrementView = async (req, res) => {
+  try {
+    const { toolId } = req.params;
+    const { userId } = req;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'The user id is invalid.' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(toolId)) {
+      return res.status(400).json({ message: 'The tool id is invalid.' });
+    }
+
+    const tool = await Tool.findById(toolId);
+
+    if (!tool) {
+      return res.status(404).json({ message: 'Tool not found.' });
+    }
+
+    // If user is authenticated, add their userId to views array (if not already present)
+    if (!tool.views.includes(userId)) {
+      tool.views.push(userId);
+      await tool.save();
+    }
+
+    return res.status(200).json({ 
+      message: 'View incremented successfully.',
+      viewsCount: tool.views.length
+    });
+  } catch (error) {
+    console.error('Increment view error:', error);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 };

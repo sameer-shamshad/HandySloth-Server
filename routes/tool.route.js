@@ -8,6 +8,7 @@ import {
   removeBookmark,
   getToolById,
   getToolsByUserId,
+  incrementView,
 } from '../controllers/tool.controller.js';
 
 const router = express.Router();
@@ -16,6 +17,7 @@ router.post('/', verifyToken, createTool);
 router.get('/recent', getRecentTools);
 router.get('/trending', getTrendingTools);
 router.get('/user/:userId', getToolsByUserId);
+router.post('/:toolId/view', incrementView);
 router.get('/:toolId', getToolById);
 router.post('/:toolId/bookmark', verifyToken, bookmarkTool);
 router.delete('/:toolId/bookmark', verifyToken, removeBookmark);
