@@ -5,8 +5,8 @@ import { getUserInfo, getUserById } from '../controllers/user.controller.js';
 const router = express.Router();
 
 router.get('/', getUserInfo);
-router.get('/:userId', getUserById);
 router.get('/tools', getUserToolIds);
 router.get('/bookmarks', getBookmarkedTools);
+router.get('/:userId', getUserById);
 
 export default router;

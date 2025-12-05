@@ -9,9 +9,20 @@ export const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
+    
+    if (!decoded.userId) {
+      return res.status(401).json({ message: 'Invalid token: userId not found.' });
+    }
+    
     req.userId = decoded.userId;
     next();
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired.' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token.' });
+    }
     return res.status(401).json({ message: 'Unauthorized request.' });
   }
 

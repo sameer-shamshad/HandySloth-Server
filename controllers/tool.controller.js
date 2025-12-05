@@ -269,12 +269,15 @@ export const getToolsByUserId = async (req, res) => {
 export const getUserToolIds = async (req, res) => {
   try {
     const { userId } = req;
-
+    console.log('userId', userId);
+    
     if (!userId) {
       return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const userIdString = String(userId).trim();
+    
+    if (!mongoose.Types.ObjectId.isValid(userIdString)) {
       return res.status(400).json({ message: 'The user id is invalid.' });
     }
 
@@ -282,17 +285,18 @@ export const getUserToolIds = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
-    const tools = await Tool.find({ author: userId })
+    const tools = await Tool.find({ author: userIdString })
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
-      .populate('author', 'username')
-      .select('-__v -author -fullDetail -toolImages -tags -createdAt -updatedAt -bookmarks -views');
+      .select('_id');
 
-    const total = await Tool.countDocuments({ author: userId });
+    const total = await Tool.countDocuments({ author: userIdString });
+
+    const toolIds = tools.map(tool => tool._id);
 
     return res.status(200).json({
-      tools,
+      toolIds,
       pagination: {
         page,
         limit,
@@ -309,6 +313,7 @@ export const getUserToolIds = async (req, res) => {
 export const getBookmarkedTools = async (req, res) => {
   try {
     const { userId } = req;
+    console.log('userId', userId);
     const limit = parseInt(req.query.limit) || 10;
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
@@ -317,17 +322,19 @@ export const getBookmarkedTools = async (req, res) => {
       return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const userIdString = String(userId).trim();
+    
+    if (!mongoose.Types.ObjectId.isValid(userIdString)) {
       return res.status(400).json({ message: 'The user id is invalid.' });
     }
 
-    const tools = await Tool.find({ bookmarks: userId })
+    const tools = await Tool.find({ bookmarks: userIdString })
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(skip)
       .select('_id');
 
-    const total = await Tool.countDocuments({ bookmarks: userId });
+    const total = await Tool.countDocuments({ bookmarks: userIdString });
 
     const toolIds = tools.map(tool => tool._id);
 
