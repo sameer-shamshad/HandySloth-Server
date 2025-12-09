@@ -159,7 +159,7 @@ export const refreshAccessToken = async (req, res) => {
     // Generate new access token
     const accessToken = await generateAccessToken(user);
 
-    return res.status(200).json({ accessToken });
+    return res.status(200).json({ accessToken, user, refreshToken: user.refreshToken });
   } catch (error) {
     console.error('Refresh token error:', error);
     res.status(500).json({ message: 'Internal server error' });
