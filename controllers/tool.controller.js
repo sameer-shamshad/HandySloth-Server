@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { Tool, TOOL_CATEGORIES } from '../models/tool.model.js';
-import { createToolSchema, updateToolSchema } from '../validations/tool.validation.js';
+import { createToolSchema, updateToolSchema, ratingSchema } from '../validations/tool.validation.js';
 
 export const createTool = async (req, res) => {
   try {
@@ -362,6 +362,71 @@ export const downvoteTool = async (req, res) => {
     });
   } catch (error) {
     console.error('Downvote tool error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const rateTool = async (req, res) => {
+  try {
+    const { userId } = req;
+    const { toolId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(toolId)) {
+      return res.status(400).json({ message: 'The user id or tool id is invalid.' });
+    }
+
+    // Validate request body with Zod
+    const validationResult = ratingSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message
+      }));
+
+      return res.status(400).json({ message: 'Validation failed.', details: errors });
+    }
+
+    const { rating, feedback } = validationResult.data;
+
+    // Find the tool
+    const tool = await Tool.findById(toolId);
+
+    if (!tool) {
+      return res.status(404).json({ message: 'Tool not found.' });
+    }
+
+    // Check if user already has a rating
+    const existingRatingIndex = tool.ratings.findIndex(
+      r => r.userId.toString() === userId.toString()
+    );
+
+    if (existingRatingIndex !== -1) { // Update existing rating
+      tool.ratings[existingRatingIndex].rating = rating;
+      if (feedback !== undefined) {
+        tool.ratings[existingRatingIndex].feedback = feedback || '';
+      }
+    } else { // Add new rating
+      tool.ratings.push({ 
+        userId, 
+        rating, 
+        feedback: feedback || '' 
+      });
+    }
+
+    await tool.save();
+
+    return res.status(200).json({ 
+      message: existingRatingIndex !== -1 
+        ? 'Rating updated successfully.' 
+        : 'Rating added successfully.',
+    });
+  } catch (error) {
+    console.error('Rate tool error:', error);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 };

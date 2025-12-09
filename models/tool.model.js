@@ -48,6 +48,12 @@ const socialLinksSchema = new Schema({
   }
 }, { _id: false });
 
+const ratingSchema = new Schema({
+  userId: { type: ObjectId, ref: 'User', required: true },
+  rating: { type: Number, min: 1, max: 5, required: true },
+  feedback: { type: String, trim: true, default: '' },
+}, { _id: false });
+
 const toolSchema = new Schema({
   author: { type: ObjectId, ref: 'User', required: true },
   name: {
@@ -99,6 +105,7 @@ const toolSchema = new Schema({
       website: ''
     })
   },
+  ratings: [ratingSchema],
   views: [{ type: ObjectId, ref: 'User', default: [] }],
   votes: [{ type: ObjectId, ref: 'User', default: [] }],
   bookmarks: [{ type: ObjectId, ref: 'User', default: [] }],

@@ -13,6 +13,7 @@ import {
   getCategoryStats,
   upvoteTool,
   downvoteTool,
+  rateTool,
   getToolsByPrimaryCategory,
   getMostPopularAlternative,
 } from '../controllers/tool.controller.js';
@@ -33,5 +34,7 @@ router.post('/:toolId/bookmark', verifyToken, bookmarkTool);
 router.delete('/:toolId/bookmark', verifyToken, removeBookmark);
 router.post('/:toolId/upvote', verifyToken, upvoteTool);
 router.delete('/:toolId/upvote', verifyToken, downvoteTool);
+router.post('/:toolId/rating', verifyToken, rateTool);
+router.put('/:toolId/rating', verifyToken, rateTool);
 
 export default router;

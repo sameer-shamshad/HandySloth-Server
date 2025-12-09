@@ -39,3 +39,8 @@ export const createToolSchema = z.object({
 // Update tool schema - same as create schema (all fields required, _id comes from route params)
 export const updateToolSchema = createToolSchema;
 
+// Rating schema
+export const ratingSchema = z.object({
+  rating: z.number().int().min(1, 'Rating must be at least 1.').max(5, 'Rating must be at most 5.'),
+  feedback: z.string().trim().optional()
+});
