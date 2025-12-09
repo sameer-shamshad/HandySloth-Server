@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
-import { Tool, TOOL_CATEGORIES } from '../models/tool.model.js';
+import { Tool, ToolView, TOOL_CATEGORIES } from '../models/tool.model.js';
 import { createToolSchema, updateToolSchema, ratingSchema } from '../validations/tool.validation.js';
+import { getIP } from '../utils/ip.js';
+import { hashString } from '../utils/hash.js';
 
 export const createTool = async (req, res) => {
   try {
@@ -170,11 +172,19 @@ export const getTrendingTools = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
-    // Aggregate to sort by views array length
+    // Aggregate to sort by views count from ToolView collection
     const tools = await Tool.aggregate([
       {
+        $lookup: {
+          from: 'toolviews',
+          localField: '_id',
+          foreignField: 'tool',
+          as: 'viewsData'
+        }
+      },
+      {
         $addFields: {
-          viewsCount: { $size: { $ifNull: ['$views', []] } }
+          viewsCount: { $size: { $ifNull: ['$viewsData', []] } }
         }
       },
       { $sort: { viewsCount: -1 } },
@@ -184,7 +194,7 @@ export const getTrendingTools = async (req, res) => {
         $project: {
           __v: 0,
           tags: 0,
-          views: 0,
+          viewsData: 0,
           votes: 0,
           author: 0,
           createdAt: 0,
@@ -210,6 +220,105 @@ export const getTrendingTools = async (req, res) => {
     });
   } catch (error) {
     console.error('Get trending tools error:', error);
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const getToolsByType = async (req, res) => {
+  try {
+    const { type } = req.params;
+    const limit = parseInt(req.query.limit) || 12;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
+    // Validate type
+    const validTypes = ['recent', 'trending', 'popular'];
+    if (!validTypes.includes(type.toLowerCase())) {
+      return res.status(400).json({ message: 'Invalid type. Must be recent, trending, or popular.' });
+    }
+
+    const typeLower = type.toLowerCase();
+    let tools;
+    let total;
+
+    if (typeLower === 'recent') {
+      // Sort by createdAt: -1
+      tools = await Tool.find()
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip)
+        .select('_id logo name primaryCategory shortDescription links bookmarks createdAt');
+      total = await Tool.countDocuments();
+    } else if (typeLower === 'popular') { // Sort by views count from ToolView collection
+      tools = await Tool.aggregate([
+        {
+          $lookup: {
+            from: 'toolviews',
+            localField: '_id',
+            foreignField: 'tool',
+            as: 'viewsData'
+          }
+        },
+        {
+          $addFields: {
+            viewsCount: { $size: { $ifNull: ['$viewsData', []] } }
+          }
+        },
+        { $sort: { viewsCount: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            _id: 1,
+            logo: 1,
+            name: 1,
+            primaryCategory: 1,
+            shortDescription: 1,
+            links: 1,
+            bookmarks: 1,
+            createdAt: 1
+          }
+        }
+      ]);
+      total = await Tool.countDocuments();
+    } else if (typeLower === 'trending') {
+      // Sort by votes count
+      tools = await Tool.aggregate([
+        {
+          $addFields: {
+            votesCount: { $size: { $ifNull: ['$votes', []] } }
+          }
+        },
+        { $sort: { votesCount: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            _id: 1,
+            logo: 1,
+            name: 1,
+            primaryCategory: 1,
+            shortDescription: 1,
+            links: 1,
+            bookmarks: 1,
+            createdAt: 1
+          }
+        }
+      ]);
+      total = await Tool.countDocuments();
+    }
+
+    return res.status(200).json({
+      tools,
+      pagination: {
+        page,
+        limit,
+        totalTools: total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get tools by type error:', error);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 };
@@ -748,29 +857,27 @@ export const getVotedToolIds = async (req, res) => {
 export const incrementView = async (req, res) => {
   try {
     const { toolId } = req.params;
-    const { userId } = req;
-
-    if (!userId) {
-      return res.status(401).json({ message: 'The user id is missing. Please authenticate.' });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'The user id is invalid.' });
-    }
 
     if (!mongoose.Types.ObjectId.isValid(toolId)) {
       return res.status(400).json({ message: 'The tool id is invalid.' });
     }
 
-    const tool = await Tool.findByIdAndUpdate(
-      toolId, 
-      { $addToSet: { views: userId } },
-      { new: true, upsert: false }
-    );
-
+    // Check if tool exists
+    const tool = await Tool.findById(toolId);
     if (!tool) {
       return res.status(404).json({ message: 'Tool not found.' });
     }
+
+    // Get IP address and hash it
+    const ipAddress = getIP(req);
+    const hashedIP = hashString(ipAddress);
+
+    // Create or update view (unique constraint on tool + ip prevents duplicates)
+    await ToolView.findOneAndUpdate(
+      { tool: toolId, ip: hashedIP },
+      { tool: toolId, ip: hashedIP, viewedAt: new Date() },
+      { upsert: true, new: true }
+    );
 
     return res.status(200).json({ message: 'View incremented successfully.' });
   } catch (error) {
@@ -796,12 +903,20 @@ export const getToolsByPrimaryCategory = async (req, res) => {
       return res.status(400).json({ message: 'Invalid primary category.' });
     }
 
-    // Aggregate to sort by viewsCount
+    // Aggregate to sort by viewsCount from ToolView collection
     const tools = await Tool.aggregate([
       { $match: { primaryCategory } },
       {
+        $lookup: {
+          from: 'toolviews',
+          localField: '_id',
+          foreignField: 'tool',
+          as: 'viewsData'
+        }
+      },
+      {
         $addFields: {
-          viewsCount: { $size: { $ifNull: ['$views', []] } }
+          viewsCount: { $size: { $ifNull: ['$viewsData', []] } }
         }
       },
       { $sort: { viewsCount: -1 } },

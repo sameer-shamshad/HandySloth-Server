@@ -5,6 +5,7 @@ import {
   updateTool,
   getRecentTools,
   getTrendingTools,
+  getToolsByType,
   bookmarkTool,
   removeBookmark,
   getToolById,
@@ -24,11 +25,12 @@ router.post('/', verifyToken, createTool);
 router.put('/:toolId', verifyToken, updateTool);
 router.get('/recent', getRecentTools);
 router.get('/trending', getTrendingTools);
+router.get('/type/:type', getToolsByType);
 router.get('/category/:primaryCategory', getToolsByPrimaryCategory);
 router.get('/popular-alternative/:primaryCategory', getMostPopularAlternative);
 router.get('/stats/categories', getCategoryStats);
 router.get('/user/:userId', getToolsByUserId);
-router.post('/:toolId/view', verifyToken, incrementView);
+router.post('/:toolId/view', incrementView);
 router.get('/:toolId', getToolById);
 router.post('/:toolId/bookmark', verifyToken, bookmarkTool);
 router.delete('/:toolId/bookmark', verifyToken, removeBookmark);

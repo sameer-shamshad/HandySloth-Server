@@ -106,18 +106,25 @@ const toolSchema = new Schema({
     })
   },
   ratings: [ratingSchema],
-  views: [{ type: ObjectId, ref: 'User', default: [] }],
   votes: [{ type: ObjectId, ref: 'User', default: [] }],
   bookmarks: [{ type: ObjectId, ref: 'User', default: [] }],
 }, {
   timestamps: true,
 });
 
-toolSchema.index({ category: 1 });
+toolSchema.index({ primaryCategory: 1 });
 toolSchema.index({ tags: 1 });
-toolSchema.index({ views: -1 });
 toolSchema.index({ createdAt: -1 });
 toolSchema.index({ bookmarks: -1 });
 toolSchema.index({ name: 'text' });
 
+const toolViewSchema = new Schema({
+  tool: { type: ObjectId, ref: 'Tool', required: true },
+  ip: { type: String, required: true },
+  viewedAt: { type: Date, default: Date.now },
+});
+
+toolViewSchema.index({ tool: 1, ip: 1 }, { unique: true });
+
 export const Tool = model('Tool', toolSchema);
+export const ToolView = model('ToolView', toolViewSchema);
