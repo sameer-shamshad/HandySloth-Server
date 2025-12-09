@@ -36,3 +36,6 @@ export const createToolSchema = z.object({
   links: linksSchema.optional()
 });
 
+// Update tool schema - same as create schema (all fields required, _id comes from route params)
+export const updateToolSchema = createToolSchema;
+

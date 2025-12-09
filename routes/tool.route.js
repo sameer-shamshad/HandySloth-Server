@@ -2,6 +2,7 @@ import express from 'express';
 import { verifyToken } from '../middlewares/verifyToken.js';
 import { 
   createTool,
+  updateTool,
   getRecentTools,
   getTrendingTools,
   bookmarkTool,
@@ -19,13 +20,14 @@ import {
 const router = express.Router();
 
 router.post('/', verifyToken, createTool);
+router.put('/:toolId', verifyToken, updateTool);
 router.get('/recent', getRecentTools);
 router.get('/trending', getTrendingTools);
 router.get('/category/:primaryCategory', getToolsByPrimaryCategory);
 router.get('/popular-alternative/:primaryCategory', getMostPopularAlternative);
 router.get('/stats/categories', getCategoryStats);
 router.get('/user/:userId', getToolsByUserId);
-router.post('/:toolId/view', incrementView);
+router.post('/:toolId/view', verifyToken, incrementView);
 router.get('/:toolId', getToolById);
 router.post('/:toolId/bookmark', verifyToken, bookmarkTool);
 router.delete('/:toolId/bookmark', verifyToken, removeBookmark);
