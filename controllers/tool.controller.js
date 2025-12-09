@@ -405,26 +405,20 @@ export const rateTool = async (req, res) => {
       r => r.userId.toString() === userId.toString()
     );
 
-    if (existingRatingIndex !== -1) { // Update existing rating
-      tool.ratings[existingRatingIndex].rating = rating;
-      if (feedback !== undefined) {
-        tool.ratings[existingRatingIndex].feedback = feedback || '';
-      }
-    } else { // Add new rating
-      tool.ratings.push({ 
-        userId, 
-        rating, 
-        feedback: feedback || '' 
-      });
+    if (existingRatingIndex !== -1) {
+      return res.status(400).json({ message: 'You have already rated this tool.' });
     }
+
+    // Add new rating
+    tool.ratings.push({ 
+      userId, 
+      rating, 
+      feedback: feedback || '' 
+    });
 
     await tool.save();
 
-    return res.status(200).json({ 
-      message: existingRatingIndex !== -1 
-        ? 'Rating updated successfully.' 
-        : 'Rating added successfully.',
-    });
+    return res.status(200).json({ message: 'Rating added successfully.' });
   } catch (error) {
     console.error('Rate tool error:', error);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
