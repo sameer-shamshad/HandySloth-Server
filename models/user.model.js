@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model, ObjectId } from 'mongoose';
 
 const userSchema = new Schema({
   username: {
@@ -20,7 +20,8 @@ const userSchema = new Schema({
   refreshToken: {
     type: String,
     default: null
-  }
+  },
+  recentlyViewedTools: [{ type: ObjectId, ref: 'Tool', default: [] }],
 }, {
   timestamps: true
 });

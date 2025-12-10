@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
-import { Tool, ToolView, TOOL_CATEGORIES } from '../models/tool.model.js';
-import { createToolSchema, updateToolSchema, ratingSchema } from '../validations/tool.validation.js';
 import { getIP } from '../utils/ip.js';
 import { hashString } from '../utils/hash.js';
+import { User } from '../models/user.model.js';
+import { Tool, ToolView, TOOL_CATEGORIES } from '../models/tool.model.js';
+import { createToolSchema, updateToolSchema, ratingSchema } from '../validations/tool.validation.js';
 
 export const createTool = async (req, res) => {
   try {
@@ -770,6 +771,7 @@ export const getVotedToolIds = async (req, res) => {
 export const incrementView = async (req, res) => {
   try {
     const { toolId } = req.params;
+    const userId = req.params.userId || req.query.userId;
 
     if (!mongoose.Types.ObjectId.isValid(toolId)) {
       return res.status(400).json({ message: 'The tool id is invalid.' });
@@ -793,6 +795,21 @@ export const incrementView = async (req, res) => {
       { tool: toolId, ip: hashedIP, viewedAt: new Date() },
       { upsert: true, new: true }
     );
+
+    // Update recentlyViewedTools if userId is provided
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      const user = await User.findById(userId);
+      if (user) {
+        // Remove the toolId if it already exists in the array
+        user.recentlyViewedTools = user.recentlyViewedTools.filter(
+          id => id.toString() !== toolId.toString()
+        );
+        
+        user.recentlyViewedTools.unshift(toolId); // Add the toolId to the front of the array
+        user.recentlyViewedTools = user.recentlyViewedTools.slice(0, 5); // Keep only the last 5 tools
+        await user.save();
+      }
+    }
 
     return res.status(200).json({ message: 'View incremented successfully.' });
   } catch (error) {
