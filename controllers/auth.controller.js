@@ -116,7 +116,7 @@ export const checkSession = async (req, res) => {
   try {
     const userId = req.userId;
 
-    const user = await User.findById(userId).select('-password -__v');
+    const user = await User.findById(userId).select('-password -__v -recentlyViewedTools');
 
     if (!user) {
       return res.status(404).json({  message: 'User not found.' });
@@ -146,7 +146,7 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     // Find user by ID
-    const user = await User.findById(decoded.userId, '-password -__v');
+    const user = await User.findById(decoded.userId).select('-password -__v -recentlyViewedTools');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });

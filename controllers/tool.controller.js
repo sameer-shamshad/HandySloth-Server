@@ -785,8 +785,6 @@ export const incrementView = async (req, res) => {
 
     // Get IP address and hash it
     const ipAddress = getIP(req);
-    console.log(req.headers["x-forwarded-for"], req.connection.remoteAddress, req.socket.remoteAddress, req.ip);
-    console.log(ipAddress);
     const hashedIP = hashString(ipAddress);
 
     // Create or update view (unique constraint on tool + ip prevents duplicates)
