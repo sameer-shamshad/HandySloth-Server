@@ -771,8 +771,8 @@ export const getVotedToolIds = async (req, res) => {
 export const incrementView = async (req, res) => {
   try {
     const { toolId } = req.params;
-    const userId = req.params.userId || req.query.userId;
-
+    const { userId } = req.query;
+    console.log(userId)
     if (!mongoose.Types.ObjectId.isValid(toolId)) {
       return res.status(400).json({ message: 'The tool id is invalid.' });
     }
@@ -990,6 +990,31 @@ export const getCategoryStats = async (req, res) => {
 
     return res.status(200).json({ stats, message: 'Category stats fetched successfully.' });
   } catch (error) {
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+  }
+};
+
+export const searchToolByName = async (req, res) => {
+  try {
+    const { name } = req.query;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ message: 'Tool name is required.' });
+    }
+
+    const tools = await Tool.find({
+      name: { $regex: name.trim(), $options: 'i' }
+    })
+      .select('_id name logo')
+      .limit(10)
+      .lean();
+
+    return res.status(200).json({ 
+      tools,
+      message: 'Tools fetched successfully.'
+    });
+  } catch (error) {
+    console.error('Search tool by name error:', error);
     res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 };

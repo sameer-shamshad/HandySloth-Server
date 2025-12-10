@@ -49,7 +49,7 @@ export const getUserById = async (req, res) => {
 
 export const getRecentlyViewedTools = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: 'The user id is invalid.' });

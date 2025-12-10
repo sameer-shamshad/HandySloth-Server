@@ -15,12 +15,14 @@ import {
   rateTool,
   getToolsByPrimaryCategory,
   getMostPopularAlternative,
+  searchToolByName,
 } from '../controllers/tool.controller.js';
 
 const router = express.Router();
 
 router.post('/', verifyToken, createTool);
 router.put('/:toolId', verifyToken, updateTool);
+router.get('/search', searchToolByName);
 router.get('/type/:type', getToolsByType);
 router.get('/category/:primaryCategory', getToolsByPrimaryCategory);
 router.get('/popular-alternative/:primaryCategory', getMostPopularAlternative);
