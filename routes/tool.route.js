@@ -3,8 +3,6 @@ import { verifyToken } from '../middlewares/verifyToken.js';
 import { 
   createTool,
   updateTool,
-  getRecentTools,
-  getTrendingTools,
   getToolsByType,
   bookmarkTool,
   removeBookmark,
@@ -23,8 +21,6 @@ const router = express.Router();
 
 router.post('/', verifyToken, createTool);
 router.put('/:toolId', verifyToken, updateTool);
-router.get('/recent', getRecentTools);
-router.get('/trending', getTrendingTools);
 router.get('/type/:type', getToolsByType);
 router.get('/category/:primaryCategory', getToolsByPrimaryCategory);
 router.get('/popular-alternative/:primaryCategory', getMostPopularAlternative);
